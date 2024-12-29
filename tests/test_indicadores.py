@@ -1,18 +1,13 @@
-import sys
-import os
-
-# Adiciona a pasta 'src' ao caminho do Python, caso o pytest.ini não seja suficiente
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
+# Arquivo: tests/test_indicadores.py
 
 from indicadores.medias_moveis import calcular_emas
 from indicadores.rsi import calcular_rsi
-from estrategia.estrategia_trading import estrategia
-
+from estrategia.estrategia_trading import estrategia_basica, estrategia_multiplos_intervalos
 
 # Testes
 import pandas as pd
 
-def test_estrategia():
+def test_estrategia_basica():
     # Dados simulados
     dados = pd.DataFrame({
         'close': [100, 102, 101, 104, 105, 107, 106],
@@ -29,9 +24,26 @@ def test_estrategia():
     rsi = calcular_rsi(dados, rsi_periodo)
 
     # Testar estratégia
-    sinal = estrategia(dados, emas, rsi, volume_medio)
+    sinal = estrategia_basica(dados, emas, rsi, volume_medio)
 
-    assert sinal in ["COMPRA", "VENDA", None], f"Sinal inesperado: {sinal}"
+    assert sinal in ["COMPRA", "VENDA", "NEUTRO"], f"Sinal inesperado: {sinal}"
+
+def test_estrategia_multiplos_intervalos():
+    dados_por_intervalo = {
+        "1min": pd.DataFrame({
+            'close': [100, 101, 102, 103, 104],
+            'volume': [2000, 2200, 2300, 2400, 2500]
+        }),
+        "5min": pd.DataFrame({
+            'close': [110, 111, 112, 113, 114],
+            'volume': [3000, 3200, 3300, 3400, 3500]
+        })
+    }
+
+    resultados = estrategia_multiplos_intervalos(dados_por_intervalo, rsi_periodo=14, volume_medio=1500)
+
+    for intervalo, sinal in resultados.items():
+        assert sinal in ["COMPRA", "VENDA", "NEUTRO", None], f"Sinal inesperado: {sinal} para o intervalo {intervalo}"
 
 def test_calcular_emas():
     # Dados simulados
@@ -58,34 +70,31 @@ def test_estrategia_volume_baixo():
 
     emas = calcular_emas(dados, periodos_ema)
     rsi = calcular_rsi(dados, rsi_periodo)
-    sinal = estrategia(dados, emas, rsi, volume_medio)
+    sinal = estrategia_basica(dados, emas, rsi, volume_medio)
 
-    assert sinal is None  # Nenhum sinal deve ser gerado, pois o volume está abaixo da média
+    assert sinal == "NEUTRO", "Esperado: NEUTRO devido ao volume baixo"
 
 def test_estrategia_rsi_alto():
-    """
-    Testa a lógica de venda da função 'estrategia' em um cenário com RSI alto.
-    """
     # Configuração do volume médio
     volume_medio = 2000
 
     # Dados simulados com close, volume e indicadores técnicos
     dados = pd.DataFrame({
-        'close': [100, 101, 102, 103, 104, 105],  # Preços crescentes
+        'close': [100, 101, 102, 103, 104, 105],
         'volume': [2500, 2700, 2800, 2900, 3000, 3100]  # Volume alto
     })
 
     # Simulação de valores de EMA
     emas = {
-        'EMA_9': pd.Series([100, 101, 102, 103, 104, 105]),  # Valores menores
-        'EMA_21': pd.Series([107, 108, 109, 110, 111, 112])  # Valores maiores
+        'EMA_9': pd.Series([100, 101, 102, 103, 104, 105]),
+        'EMA_21': pd.Series([107, 108, 109, 110, 111, 112])
     }
 
     # Simulação de valores de RSI (acima de 70)
     rsi = pd.Series([65, 70, 72, 75, 80, 85])
 
     # Executa a estratégia
-    sinal = estrategia(dados, emas, rsi, volume_medio)
+    sinal = estrategia_basica(dados, emas, rsi, volume_medio)
 
     # Verifica se o sinal retornado é "VENDA"
     assert sinal == "VENDA", f"Esperado: VENDA, Obtido: {sinal}"

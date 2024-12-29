@@ -8,7 +8,7 @@ import requests
 import pandas as pd
 import os
 from dotenv import load_dotenv
-from src.utils import init_db
+from utils import init_db
 
 # Carregar variáveis de ambiente
 load_dotenv()
