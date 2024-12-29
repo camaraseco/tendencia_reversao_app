@@ -1,5 +1,5 @@
 import os
-from app import carregar_dados_alpha_vantage
+from src.app import carregar_dados_alpha_vantage
 
 def test_carregar_dados_alpha_vantage():
     api_key = os.getenv("ALPHA_VANTAGE_API_KEY")

@@ -1,20 +1,13 @@
-from sqlalchemy.orm import Session
-from backend.models import Base, engine
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
+DATABASE_URL = "sqlite:///./test.db"  # Substitua pelo URL do seu banco de dados
+
+engine = create_engine(DATABASE_URL)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 def init_db():
-    """
-    Inicializa o banco de dados e cria as tabelas necessárias.
-    """
-    print("Inicializando o banco de dados...")
-    Base.metadata.create_all(bind=engine)
+    # Importar os modelos aqui para que sejam registrados corretamente
+    import src.backend.models
+    src.backend.models.Base.metadata.create_all(bind=engine)
 
-def get_database_session() -> Session:
-    """
-    Gera uma sessão de banco de dados para realizar operações.
-    """
-    from backend.models import SessionLocal
-    try:
-        db = SessionLocal()
-        yield db
-    finally:
-        db.close()
