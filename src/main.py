@@ -13,6 +13,9 @@ from utils import init_db
 # Carregar variáveis de ambiente
 load_dotenv()
 
+EMAIL_USER = os.getenv("EMAIL_USER")
+EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
+
 def carregar_dados_alpha_vantage(symbol, api_key, intervalo='1min'):
     """
     Carrega os dados do mercado usando a API Alpha Vantage.

@@ -20,7 +20,7 @@ def test_carregar_dados_alpha_vantage(mock_carregar_dados):
     # Configura o mock para retornar os dados simulados
     mock_carregar_dados.return_value = mock_response
 
-    from app import carregar_dados_alpha_vantage
+    from main import carregar_dados_alpha_vantage
 
     api_key = "MOCKED_API_KEY"
     dados = carregar_dados_alpha_vantage("AAPL", api_key, "1min")
