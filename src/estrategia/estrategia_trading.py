@@ -1,6 +1,8 @@
 # Arquivo: estrategia_trading.py
 
 import pandas as pd
+from utils import enviar_email
+from datetime import datetime
 
 def calcular_emas(dados, periodos):
     resultado = {}
@@ -67,4 +69,24 @@ def estrategia_multiplos_intervalos(dados_por_intervalo, rsi_periodo=14, volume_
 
     return resultados
 
+def processar_negociacao(tipo_operacao, preco_execucao, stop_loss, take_profit, preco_atual, email_usuario):
+    """
+    Processa a negociação e envia notificação por email se atingir Stop Loss ou Take Profit.
 
+    Args:
+        tipo_operacao (str): 'Compra' ou 'Venda'.
+        preco_execucao (float): Preço inicial da operação.
+        stop_loss (float): Preço de Stop Loss.
+        take_profit (float): Preço de Take Profit.
+        preco_atual (float): Preço atual do ativo.
+        email_usuario (str): Email do usuário para notificação.
+    """
+    if preco_atual <= stop_loss:
+        motivo = "Stop Loss"
+        enviar_email(tipo_operacao, preco_execucao, motivo, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), email_usuario)
+        return f"Operação finalizada em {stop_loss} por Stop Loss."
+    elif preco_atual >= take_profit:
+        motivo = "Take Profit"
+        enviar_email(tipo_operacao, preco_execucao, motivo, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), email_usuario)
+        return f"Operação finalizada em {take_profit} por Take Profit."
+    return "Operação em andamento."

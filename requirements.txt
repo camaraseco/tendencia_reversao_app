@@ -63,3 +63,5 @@ pandas-ta==0.3.14b0
 psycopg2
 jwt
 pydantic[email]
+yagmail
+smtplib

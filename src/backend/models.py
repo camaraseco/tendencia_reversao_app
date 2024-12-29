@@ -5,7 +5,7 @@ from sqlalchemy.orm import sessionmaker
 Base = declarative_base()
 
 # URL de conexão ao banco de dados
-DATABASE_URL = "sqlite:///./app.db"  # Você pode trocar para outro banco, como PostgreSQL ou MySQL
+DATABASE_URL = "postgresql://postgres:Pocamara.99@localhost:5432/setup_db"  # Você pode trocar para outro banco, como PostgreSQL ou MySQL
 
 # Configuração do motor do banco de dados
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})

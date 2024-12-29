@@ -4,6 +4,12 @@ from datetime import datetime, timedelta
 from backend.models import User
 from src.utils import get_database_session
 from fastapi import HTTPException, status
+from fastapi import Depends, HTTPException
+from fastapi.security import OAuth2PasswordRequestForm
+from sqlalchemy.orm import Session
+from utils import criar_token_jwt
+from backend.models import Usuario
+from backend.database import get_database_session
 
 # Chave secreta para gerar tokens JWT
 SECRET_KEY = "sua_chave_secreta_super_segura"
@@ -70,3 +76,13 @@ def authenticate_user(email: str, password: str):
     # Gerar token JWT
     access_token = create_access_token({"sub": user.email})
     return {"access_token": access_token, "token_type": "bearer"}
+
+def login(form_data: OAuth2PasswordRequestForm, db: Session = Depends(get_database_session)):
+    usuario = db.query(Usuario).filter(Usuario.email == form_data.username).first()
+
+    if not usuario or not verificar_senha(form_data.password, usuario.senha):
+        raise HTTPException(status_code=400, detail="Credenciais inválidas")
+
+    # Gere um token JWT com informações do usuário, incluindo o email
+    token = criar_token_jwt({"sub": usuario.email, "user_id": usuario.id})
+    return {"access_token": token, "token_type": "bearer"}
