@@ -65,3 +65,4 @@ jwt
 pydantic[email]
 yagmail
 smtplib
+SQLAlchemy

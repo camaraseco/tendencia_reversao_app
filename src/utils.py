@@ -20,46 +20,45 @@ def init_db():
 
 def enviar_email(tipo_operacao, preco_execucao, motivo, data_hora, email_destinatario):
     """
-    Envia uma notificação por email ao usuário sobre uma operação finalizada.
+    Envia um email de notificação ao usuário quando uma operação é finalizada.
 
-    Args:
-        tipo_operacao (str): 'Compra' ou 'Venda'.
-        preco_execucao (float): Preço de execução da operação.
-        motivo (str): 'Stop Loss' ou 'Take Profit'.
-        data_hora (str): Data e hora da finalização.
-        email_destinatario (str): Email do usuário.
+    Parâmetros:
+        tipo_operacao (str): Tipo de operação realizada ('COMPRA' ou 'VENDA').
+        preco_execucao (float): Preço em que a operação foi executada.
+        motivo (str): Motivo da finalização da operação ('Stop Loss' ou 'Take Profit').
+        data_hora (datetime): Data e hora da operação.
+        email_destinatario (str): Email do usuário para enviar a notificação.
     """
-    email_user = os.getenv("EMAIL_USER")
-    email_password = os.getenv("EMAIL_PASSWORD")
-    email_host = os.getenv("EMAIL_HOST")
-    email_port = int(os.getenv("EMAIL_PORT"))
+    smtp_host = "smtp.gmail.com"
+    smtp_port = 587
+    smtp_user = os.getenv("EMAIL_USER")
+    smtp_password = os.getenv("EMAIL_PASSWORD")
 
-    assunto = f"Notificação: Operação {tipo_operacao} Finalizada ({motivo})"
-    corpo = f"""
+    mensagem = MIMEMultipart()
+    mensagem["From"] = smtp_user
+    mensagem["To"] = email_destinatario
+    mensagem["Subject"] = f"Notificação: Operação {tipo_operacao} Finalizada ({motivo})"
+
+    corpo_email = f"""
     Prezado usuário,
 
     Sua operação foi finalizada com os seguintes detalhes:
 
-    - Tipo de operação: {tipo_operacao}
-    - Preço de execução: {preco_execucao}
-    - Motivo: {motivo}
-    - Data e hora: {data_hora}
+    Tipo de operação: {tipo_operacao}
+    Preço de execução: {preco_execucao}
+    Motivo: {motivo}
+    Data e hora: {data_hora}
 
     Atenciosamente,
-    Equipe de Negociação Automática.
+    Equipe de Negociação Automática
     """
-
-    mensagem = MIMEMultipart()
-    mensagem['From'] = email_user
-    mensagem['To'] = email_destinatario
-    mensagem['Subject'] = assunto
-    mensagem.attach(MIMEText(corpo, 'plain'))
+    mensagem.attach(MIMEText(corpo_email, "plain"))
 
     try:
-        with smtplib.SMTP(email_host, email_port) as servidor:
-            servidor.starttls()
-            servidor.login(email_user, email_password)
-            servidor.sendmail(email_user, email_destinatario, mensagem.as_string())
-        print(f"Email enviado com sucesso para {email_destinatario}.")
+        with smtplib.SMTP(smtp_host, smtp_port) as server:
+            server.starttls()
+            server.login(smtp_user, smtp_password)
+            server.sendmail(smtp_user, email_destinatario, mensagem.as_string())
+            print(f"Email enviado com sucesso para {email_destinatario}.")
     except Exception as e:
         print(f"Erro ao enviar email: {e}")

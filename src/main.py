@@ -1,4 +1,4 @@
-# Arquivo: src/app.py
+# Arquivo: src/main.py
 
 from indicadores.medias_moveis import calcular_emas
 from indicadores.rsi import calcular_rsi
@@ -15,6 +15,8 @@ load_dotenv()
 
 EMAIL_USER = os.getenv("EMAIL_USER")
 EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
+if not EMAIL_USER or not EMAIL_PASSWORD:
+    raise Exception("As variáveis EMAIL_USER e EMAIL_PASSWORD precisam ser configuradas no arquivo .env.")
 
 def carregar_dados_alpha_vantage(symbol, api_key, intervalo='1min'):
     """
