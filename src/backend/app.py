@@ -1,4 +1,4 @@
-# Arquivo: backend\app.py
+# Arquivo: src/backend/app.py
 
 from fastapi import FastAPI
 from backend.routers import auth, broker, trading
