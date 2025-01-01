@@ -1,47 +1,56 @@
 # Arquivo: src/backend/app.py
 
-from fastapi import FastAPI
-from backend.routers import auth, broker, trading
-from fastapi import FastAPI, HTTPException, Request
-from backend.routers import auth, broker, trading
+# Arquivo: src/backend/app.py
+
+from fastapi import FastAPI, HTTPException, Request, Depends
+from sqlalchemy.orm import Session
+from backend.models import User
+from backend.database import get_db, SessionLocal
 from utils import enviar_email
 from datetime import datetime
 
 app = FastAPI()
 
-# Incluindo as rotas
-app.include_router(auth.router, prefix="/auth", tags=["Auth"])
-app.include_router(broker.router, prefix="/broker", tags=["Broker"])
-app.include_router(trading.router, prefix="/trading", tags=["Trading"])
-
-@app.get("/")
-async def root():
-    return {"message": "Bem-vindo ao App de Negociação Automática"}
+# Dependência para criar sessões do banco de dados
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 @app.post("/finalizar-operacao/")
-async def finalizar_operacao(request: Request):
+async def finalizar_operacao(request: Request, db: Session = Depends(get_db)):
     """
     Finaliza uma operação e envia notificação por email.
 
     Corpo esperado:
     {
+        "user_id": 1,
         "tipo_operacao": "COMPRA" ou "VENDA",
         "preco_execucao": 100.0,
-        "motivo": "Stop Loss" ou "Take Profit",
-        "email_usuario": "usuario@exemplo.com"
+        "motivo": "Stop Loss" ou "Take Profit"
     }
     """
     body = await request.json()
 
+    user_id = body.get("user_id")
     tipo_operacao = body.get("tipo_operacao")
     preco_execucao = body.get("preco_execucao")
     motivo = body.get("motivo")
-    email_usuario = body.get("email_usuario")
 
-    if not all([tipo_operacao, preco_execucao, motivo, email_usuario]):
+    if not all([user_id, tipo_operacao, preco_execucao, motivo]):
         raise HTTPException(status_code=400, detail="Faltam parâmetros obrigatórios")
 
+    # Buscar o e-mail do usuário pelo ID
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+
+    email_usuario = user.email
     data_hora = datetime.now()
+
+    # Enviar o e-mail
     enviar_email(tipo_operacao, preco_execucao, motivo, data_hora, email_usuario)
 
     return {"message": "Operação finalizada e notificação enviada com sucesso!"}

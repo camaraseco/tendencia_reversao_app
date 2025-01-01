@@ -6,6 +6,12 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import os
+import logging
+
+# Configurar logs
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 
 
 DATABASE_URL = "postgresql://postgres:Pocamara.99@localhost:5432/setup_db"  # Substitua pelo URL do seu banco de dados
@@ -18,47 +24,43 @@ def init_db():
     import src.backend.models
     src.backend.models.Base.metadata.create_all(bind=engine)
 
-def enviar_email(tipo_operacao, preco_execucao, motivo, data_hora, email_destinatario):
+def enviar_email(tipo_operacao, preco_execucao, motivo, data_hora, email_usuario):
     """
-    Envia um email de notificação ao usuário quando uma operação é finalizada.
-
-    Parâmetros:
-        tipo_operacao (str): Tipo de operação realizada ('COMPRA' ou 'VENDA').
-        preco_execucao (float): Preço em que a operação foi executada.
-        motivo (str): Motivo da finalização da operação ('Stop Loss' ou 'Take Profit').
-        data_hora (datetime): Data e hora da operação.
-        email_destinatario (str): Email do usuário para enviar a notificação.
+    Envia uma notificação por e-mail ao usuário.
     """
-    smtp_host = "smtp.gmail.com"
-    smtp_port = 587
-    smtp_user = os.getenv("EMAIL_USER")
-    smtp_password = os.getenv("EMAIL_PASSWORD")
-
-    mensagem = MIMEMultipart()
-    mensagem["From"] = smtp_user
-    mensagem["To"] = email_destinatario
-    mensagem["Subject"] = f"Notificação: Operação {tipo_operacao} Finalizada ({motivo})"
-
-    corpo_email = f"""
-    Prezado usuário,
-
-    Sua operação foi finalizada com os seguintes detalhes:
-
-    Tipo de operação: {tipo_operacao}
-    Preço de execução: {preco_execucao}
-    Motivo: {motivo}
-    Data e hora: {data_hora}
-
-    Atenciosamente,
-    Equipe de Negociação Automática
-    """
-    mensagem.attach(MIMEText(corpo_email, "plain"))
-
     try:
-        with smtplib.SMTP(smtp_host, smtp_port) as server:
+        # Configurações do servidor SMTP
+        email_user = os.getenv("EMAIL_USER")
+        email_password = os.getenv("EMAIL_PASSWORD")
+
+        if not email_user or not email_password:
+            raise Exception("Credenciais de e-mail não configuradas nas variáveis de ambiente.")
+
+        # Compor o e-mail
+        subject = "Notificação de Operação Finalizada"
+        body = f"""
+        Detalhes da operação:
+        Tipo de operação: {tipo_operacao}
+        Preço de execução: {preco_execucao}
+        Motivo: {motivo}
+        Data e hora: {data_hora}
+
+        Obrigado por usar nosso sistema!
+        """
+        msg = MIMEMultipart()
+        msg['From'] = email_user
+        msg['To'] = email_usuario
+        msg['Subject'] = subject
+        msg.attach(MIMEText(body, 'plain'))
+
+        # Enviar o e-mail
+        with smtplib.SMTP("smtp.gmail.com", 587) as server:
             server.starttls()
-            server.login(smtp_user, smtp_password)
-            server.sendmail(smtp_user, email_destinatario, mensagem.as_string())
-            print(f"Email enviado com sucesso para {email_destinatario}.")
+            server.login(email_user, email_password)
+            server.sendmail(email_user, email_usuario, msg.as_string())
+
+        logger.info(f"E-mail enviado com sucesso para {email_usuario}")
+
     except Exception as e:
-        print(f"Erro ao enviar email: {e}")
+        logger.error(f"Erro ao enviar e-mail: {e}")
+        raise
