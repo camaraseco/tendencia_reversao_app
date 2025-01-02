@@ -27,9 +27,9 @@ async def finalizar_operacao(request: Request, db: Session = Depends(get_db)):
     Corpo esperado:
     {
         "user_id": 1,
-        "tipo_operacao": "COMPRA" ou "VENDA",
+        "tipo_operacao": "COMPRA",
         "preco_execucao": 100.0,
-        "motivo": "Stop Loss" ou "Take Profit"
+        "motivo": "Stop Loss"
     }
     """
     body = await request.json()
@@ -41,6 +41,10 @@ async def finalizar_operacao(request: Request, db: Session = Depends(get_db)):
 
     if not all([user_id, tipo_operacao, preco_execucao, motivo]):
         raise HTTPException(status_code=400, detail="Faltam parâmetros obrigatórios")
+
+    # Processar e salvar a operação
+    ...
+
 
     # Buscar o e-mail do usuário pelo ID
     user = db.query(User).filter(User.id == user_id).first()

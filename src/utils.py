@@ -25,42 +25,38 @@ def init_db():
     src.backend.models.Base.metadata.create_all(bind=engine)
 
 def enviar_email(tipo_operacao, preco_execucao, motivo, data_hora, email_usuario):
-    """
-    Envia uma notificação por e-mail ao usuário.
-    """
     try:
-        # Configurações do servidor SMTP
+        # Configurações do email
         email_user = os.getenv("EMAIL_USER")
         email_password = os.getenv("EMAIL_PASSWORD")
 
         if not email_user or not email_password:
-            raise Exception("Credenciais de e-mail não configuradas nas variáveis de ambiente.")
+            raise ValueError("EMAIL_USER ou EMAIL_PASSWORD não configurados no arquivo .env.")
 
-        # Compor o e-mail
-        subject = "Notificação de Operação Finalizada"
-        body = f"""
-        Detalhes da operação:
-        Tipo de operação: {tipo_operacao}
-        Preço de execução: {preco_execucao}
-        Motivo: {motivo}
-        Data e hora: {data_hora}
+        # Configurando o servidor SMTP
+        server = smtplib.SMTP("smtp.gmail.com", 587)
+        server.starttls()
+        server.login(email_user, email_password)
 
-        Obrigado por usar nosso sistema!
-        """
+        # Criando o email
         msg = MIMEMultipart()
-        msg['From'] = email_user
-        msg['To'] = email_usuario
-        msg['Subject'] = subject
-        msg.attach(MIMEText(body, 'plain'))
+        msg["From"] = email_user
+        msg["To"] = email_usuario
+        msg["Subject"] = "Notificação de Operação"
+        body = (
+            f"Operação finalizada com sucesso!\n\n"
+            f"Tipo: {tipo_operacao}\n"
+            f"Preço: {preco_execucao}\n"
+            f"Motivo: {motivo}\n"
+            f"Data e Hora: {data_hora}\n"
+        )
+        msg.attach(MIMEText(body, "plain"))
 
-        # Enviar o e-mail
-        with smtplib.SMTP("smtp.gmail.com", 587) as server:
-            server.starttls()
-            server.login(email_user, email_password)
-            server.sendmail(email_user, email_usuario, msg.as_string())
+        # Enviar o email
+        server.sendmail(email_user, email_usuario, msg.as_string())
+        server.quit()
 
-        logger.info(f"E-mail enviado com sucesso para {email_usuario}")
-
+        print(f"Email enviado para {email_usuario}")
     except Exception as e:
-        logger.error(f"Erro ao enviar e-mail: {e}")
+        print(f"Erro ao enviar email: {e}")
         raise

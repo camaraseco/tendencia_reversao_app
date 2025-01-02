@@ -66,3 +66,4 @@ pydantic[email]
 yagmail
 smtplib
 SQLAlchemy
+email_validator
