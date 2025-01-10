@@ -1,32 +1,33 @@
+# Arquivo: src\backend\services\auth_service.py
+
 import jwt
 import bcrypt
 from datetime import datetime, timedelta
-from backend.models import User
-from src.utils import get_database_session
-from fastapi import HTTPException, status
-from fastapi import Depends, HTTPException
+from fastapi import HTTPException, status, Depends
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-from utils import criar_token_jwt
-from backend.models import Usuario
+from backend.models import User
 from backend.database import get_database_session
 
-# Chave secreta para gerar tokens JWT
-SECRET_KEY = "sua_chave_secreta_super_segura"
+# Configurações de segurança
+SECRET_KEY = "sua_chave_secreta_super_segura"  # Substitua por uma variável de ambiente em produção
 ALGORITHM = "HS256"
 TOKEN_EXPIRATION_MINUTES = 60
 
+
 def hash_password(password: str) -> str:
     """
-    Gera o hash de uma senha.
+    Gera o hash de uma senha utilizando bcrypt.
     """
-    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
     Verifica se uma senha está correta comparando com o hash armazenado.
     """
-    return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
+    return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
+
 
 def create_access_token(data: dict) -> str:
     """
@@ -37,13 +38,11 @@ def create_access_token(data: dict) -> str:
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
-def register_user(email: str, password: str):
-    """
-    Registra um novo usuário no sistema.
-    """
-    db = get_database_session()
 
-    # Verificar se o usuário já existe
+def register_user(email: str, password: str, db: Session):
+    """
+    Registra um novo usuário no banco de dados.
+    """
     existing_user = db.query(User).filter(User.email == email).first()
     if existing_user:
         raise HTTPException(
@@ -51,7 +50,6 @@ def register_user(email: str, password: str):
             detail="Usuário já cadastrado."
         )
 
-    # Criar novo usuário
     hashed_password = hash_password(password)
     new_user = User(email=email, hashed_password=hashed_password)
     db.add(new_user)
@@ -59,13 +57,11 @@ def register_user(email: str, password: str):
     db.refresh(new_user)
     return {"message": "Usuário registrado com sucesso."}
 
-def authenticate_user(email: str, password: str):
-    """
-    Autentica o usuário com base no e-mail e senha fornecidos.
-    """
-    db = get_database_session()
 
-    # Buscar usuário no banco de dados
+def authenticate_user(email: str, password: str, db: Session):
+    """
+    Autentica o usuário com base no email e senha fornecidos.
+    """
     user = db.query(User).filter(User.email == email).first()
     if not user or not verify_password(password, user.hashed_password):
         raise HTTPException(
@@ -73,16 +69,17 @@ def authenticate_user(email: str, password: str):
             detail="E-mail ou senha incorretos."
         )
 
-    # Gerar token JWT
     access_token = create_access_token({"sub": user.email})
     return {"access_token": access_token, "token_type": "bearer"}
 
+
 def login(form_data: OAuth2PasswordRequestForm, db: Session = Depends(get_database_session)):
-    usuario = db.query(Usuario).filter(Usuario.email == form_data.username).first()
+    """
+    Realiza o login do usuário com base no formulário de autenticação.
+    """
+    user = db.query(User).filter(User.email == form_data.username).first()
+    if not user or not verify_password(form_data.password, user.hashed_password):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Credenciais inválidas")
 
-    if not usuario or not verificar_senha(form_data.password, usuario.senha):
-        raise HTTPException(status_code=400, detail="Credenciais inválidas")
-
-    # Gere um token JWT com informações do usuário, incluindo o email
-    token = criar_token_jwt({"sub": usuario.email, "user_id": usuario.id})
+    token = create_access_token({"sub": user.email, "user_id": user.id})
     return {"access_token": token, "token_type": "bearer"}
